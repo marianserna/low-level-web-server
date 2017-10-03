@@ -16,7 +16,14 @@ loop do                                             # Server runs forever
   puts lines                                        # Output the full request to stdout
 
   header = "HTTP/1.1 200 OK"
-  body = File.read("index.html")
+  filename = lines[0].gsub(/GET \//, '').gsub(/\ HTTP.*/, '')
+
+  if File.exists?(filename)
+    body = File.read(filename)
+  else
+    # body = "File Not Found\n" # need to indicate end of the string with \n
+    body = "#{filename} not found"
+  end
 
   response = [
     header,
