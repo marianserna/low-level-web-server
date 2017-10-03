@@ -16,17 +16,7 @@ loop do                                             # Server runs forever
   puts lines                                        # Output the full request to stdout
 
   header = "HTTP/1.1 200 OK"
-  body = "
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <title>Yoyo my people!</title>
-      </head>
-      <body>
-        <h1>Yoyo my people!</h1>
-        <p>Hello pueblo!</p>
-      </body>
-    </html>"
+  body = File.read("index.html")
 
   response = [
     header,
