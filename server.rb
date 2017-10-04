@@ -1,49 +1,43 @@
+require_relative 'request'
+require_relative 'found'
+require_relative 'not_found'
 require 'socket'                                    # Require socket from Ruby Standard Library (stdlib)
 
-host = 'localhost'
-port = 2000
+class Server
 
-server = TCPServer.open(host, port)                 # Socket to listen to defined host and port
-puts "Server started on #{host}:#{port} ..."        # Output to stdout that server started
+  attr_accessor :host, :port, :server
 
-loop do                                             # Server runs forever
-  client = server.accept                            # Wait for a client to connect. Accept returns a TCPSocket
-
-  lines = []
-  while (line = client.gets) && !line.chomp.empty?  # Read the request and collect it until it's empty
-    lines << line.chomp
-  end
-  puts lines                                        # Output the full request to stdout
-
-  filename = lines[0].gsub(/GET \//, '').gsub(/\ HTTP.*/, '')
-
-  if File.exists?(filename)
-    body = File.read(filename)
-    success_header = []
-    success_header << "HTTP/1.1 200 OK"
-    success_header << "Content-Type: text/html" # should reflect the appropriate content type (HTML, CSS, text, etc)
-    success_header << "Content-Length: #{body.length}" # should be the actual size of the response body
-    success_header << "Connection: close"
-    header = success_header.join("\r\n")
-  else
-    # body = "File Not Found\n" # need to indicate end of the string with \n
-    body = "#{filename} not found"
-    not_found_header = []
-    not_found_header << "HTTP/1.1 404 Not Found"
-    not_found_header << "Content-Type: text/plain" # is always text/plain
-    not_found_header << "Content-Length: #{body.length}" # should the actual size of the response body
-    not_found_header << "Connection: close"
-    header = not_found_header.join("\r\n")
+  def initialize(host, port)
+    @host = host
+    @port = port
   end
 
-  response = [
-    header,
-    body
-  ]
+  def start
+    @server = TCPServer.open(host, port)                # Socket to listen to defined host and port
+    puts "Server started on #{host}:#{port} ..."        # Output to stdout that server started
+    listen
+  end
 
-  # time = Time.now.ctime
-  # response = "#{header}\r\n\r\n#{time}"       # Output the HTTP header with current time to the client
-  client.puts(response.join("\r\n\r\n"))
+  private
 
-  client.close                                      # Disconnect from the client
+  def listen
+    loop do                                             # Server runs forever
+      client = server.accept                            # Wait for a client to connect. Accept returns a TCPSocket
+      request = Request.new(client)
+      response = if File.exists?(request.filename)
+        Found.new(request)
+      else
+        NotFound.new(request)
+      end
+
+      client.puts(response.to_s)
+
+      client.close                                      # Disconnect from the client
+    end
+  end
+
 end
+
+
+new_server = Server.new('localhost', 2000)
+new_server.start
